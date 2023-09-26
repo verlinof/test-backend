@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('notes', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('id_user');
+            $table->string('note_title');
+            $table->string('note_content');
             $table->timestamps();
         });
     }
