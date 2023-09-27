@@ -15,8 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_user');
             $table->string('note_title');
-            $table->string('note_content');
+            $table->text('note_content');
             $table->timestamps();
+
+            $table->foreign('id_user')->references('id')->on('users');
         });
     }
 

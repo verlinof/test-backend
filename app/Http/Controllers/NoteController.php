@@ -2,9 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use Exception;
 use App\Models\Note;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreNoteRequest;
 use App\Http\Requests\UpdateNoteRequest;
+use App\Http\Resources\NoteDetailResource;
 
 class NoteController extends Controller
 {
@@ -13,7 +18,9 @@ class NoteController extends Controller
      */
     public function index()
     {
-        //
+        $note = Note::with('User:id,username')->get();
+
+        return NoteDetailResource::collection($note);
     }
 
     /**
@@ -27,9 +34,22 @@ class NoteController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreNoteRequest $request)
+    public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            "note_title" => 'required|max:255',
+            "note_content" => 'required',
+        ]);
+
+        try{
+            $request['id_user'] = Auth::user()->id;
+            $note = Note::create($request->all());
+            return new NoteDetailResource($note->loadMissing('User:id,username'));
+        }catch(Exception $e){
+            return response()->json([
+                'error' => $e
+            ]);
+        }
     }
 
     /**
