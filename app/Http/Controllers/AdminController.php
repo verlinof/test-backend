@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use Exception;
 use App\Models\Note;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\NoteDetailResource;
+use App\Http\Resources\UserResource;
 
-class NoteController extends Controller
+class AdminController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -17,7 +18,7 @@ class NoteController extends Controller
     public function index()
     {
         try{
-            $note = Note::where('id_user', Auth::user()->id)->with('User:id,username')->get();
+            $note = Note::with('User:id,username')->get();
             return NoteDetailResource::collection($note);
         }catch(Exception $e){
             return response()->json([
@@ -26,12 +27,61 @@ class NoteController extends Controller
         }
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function allUser(){
+        try{
+            $user = User::all();
+            return UserResource::collection($user);
+        }catch(Exception $e){
+            return response()->json([
+                'error' => $e
+            ],500);
+        }
+    }
+
+    public function showUser($id)
     {
-        //
+        try{
+            $user = User::findOrFail($id);
+            return new UserResource($user);
+        }catch(Exception $e){
+            return response()->json([
+                "error" => $e
+            ],500);
+        }
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        try{
+            $validated = $request->validate([
+                "username" => 'required|max:255',
+                "email" => 'required',
+                "status" => 'nullable|in:default,editor,admin'
+            ]);
+            $note = Note::findOrFail($id);
+            $note->update($request->all());
+            return new NoteDetailResource($note->loadMissing('User:id,username'));
+        }catch(Exception $e){
+            return response()->json([
+                "error" => $e
+            ],500);
+        }
+    }
+
+    public function deleteUser($id)
+    {
+        try{
+            $user = User::findOrFail($id);
+            $user->delete();
+
+            return response()->json([
+                "status" => "Akun berhasil dihapus oleh admin"
+            ]);
+        }catch(Exception $e){
+            return response()->json([
+                "error" => $e
+            ],500);
+        }
     }
 
     /**
@@ -39,20 +89,7 @@ class NoteController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            "note_title" => 'required|max:255',
-            "note_content" => 'required',
-        ]);
-
-        try{
-            $request['id_user'] = Auth::user()->id;
-            $note = Note::create($request->all());
-            return new NoteDetailResource($note->loadMissing('User:id,username'));
-        }catch(Exception $e){
-            return response()->json([
-                'error' => $e
-            ],500);
-        }
+        //
     }
 
     /**
@@ -68,14 +105,6 @@ class NoteController extends Controller
                 "error" => $e
             ],500);
         }
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Note $note)
-    {
-        //
     }
 
     /**
@@ -108,7 +137,7 @@ class NoteController extends Controller
             $note->delete();
 
             return response()->json([
-                "status" => "Notes berhasil dihapus"
+                "status" => "Notes berhasil dihapus oleh admin"
             ]);
         }catch(Exception $e){
             return response()->json([
